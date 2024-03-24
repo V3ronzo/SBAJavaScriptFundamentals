@@ -12,3 +12,6 @@ cried a river, exhaled, gave up , came back... logged in to ''YOUTUBE U'' LOL.
 
 **** I WISSHHHH we had another week of learning this**** i am exhausted. 
 
+I get now the ''why' this could be used in real world . that helps. I wish the assignment creators would "Show" real world examples. It helps to ground the information into practical / tangible instances. Which would help learning better. 
+
+
