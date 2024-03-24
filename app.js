@@ -76,136 +76,94 @@ const LearnerSubmissions = [
   }
 ];
 
-function getLearnerData(course, ag, submissions) {
-    const learnerArray = [];
+function getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions) {
+  try {
+      // Validate if the AssignmentGroup belongs to the CourseInfo
+      if (AssignmentGroup.course_id !== CourseInfo.id) {
+          throw new Error("Invalid input: Assignment group does not belong to the course.");
+      }
 
-for (let i = 0; i < LearnerSubmissions.length; i++) {
-      const submission = LearnerSubmissions[i];
+      // Calculate weighted average for each learner
+      function calculateWeightedAverage(assignments, learnerId) {
+          let totalWeightedScore = 0;
+          let totalPossiblePoints = 0;
 
-      if ((submission.learner_id === 125 || submission.learner_id === 132) && submission.assignment_id <=2)
-{
-  learnerArray.push(submission);
-}
-      
+          for (const assignment of assignments) {
+              const submission = LearnerSubmissions.find(sub => sub.assignment_id === assignment.id && sub.learner_id === learnerId);
+              if (submission) {
+                  const lateSubmission = new Date(submission.submission.submitted_at) > new Date(assignment.due_at);
+                  if (lateSubmission) {
+                      continue; // Skip calculation for late submissions
+                  }
+                  const score = submission.submission.score;
+                  const pointsPossible = assignment.points_possible;
+                  if (pointsPossible === 0) {
+                      throw new Error(`Invalid data: points_possible for assignment ${assignment.id} is 0.`);
+                  }
+                  const scorePercentage = score / pointsPossible;
+                  totalWeightedScore += scorePercentage * (assignment.group_weight || 1);
+                  totalPossiblePoints += (assignment.group_weight || 1);
+              }
+          }
 
-    studentsId.push(LearnerSubmissions[j].learner_id) ;
-    
+          // Handle case when totalPossiblePoints is zero
+          if (totalPossiblePoints === 0) {
+              return 0;
+          }
+
+          return (totalWeightedScore / totalPossiblePoints) * 100;
+      }
+
+      // Process each learner's data
+      const result = LearnerSubmissions.reduce((acc, submission) => {
+          const learnerId = submission.learner_id;
+          const avg = calculateWeightedAverage(AssignmentGroup.assignments, learnerId);
+
+          // Calculate percentage score for each assignment
+          const assignmentScores = AssignmentGroup.assignments.reduce((scores, assignment) => {
+              const submission = LearnerSubmissions.find(sub => sub.assignment_id === assignment.id && sub.learner_id === learnerId);
+              if (submission) {
+                  const lateSubmission = new Date(submission.submission.submitted_at) > new Date(assignment.due_at);
+                  if (lateSubmission) {
+                      return scores; // Skip adding late submissions to the scores
+                  }
+                  const score = submission.submission.score;
+                  const scorePercentage = score / assignment.points_possible;
+                  scores[assignment.id] = scorePercentage;
+              }
+              return scores;
+          }, {});
+
+          // Add learner's data to the result using push.. !!
+          acc.push({
+              id: learnerId,
+              avg,
+              ...assignmentScores
+          });
+
+          return acc;
+      }, []);
+
+      return result;
+  } catch (error) {
+      return { error: error.message };
   }
-    
-  // here, we would process this data to achieve the desired result.
-  /*const result = [
-    {
-      id: 125,
-      avg: 0.985, // (47 + 150) / (50 + 150)
-      1: 0.94, // 47 / 50
-      2: 1.0 // 150 / 150
-    },
-    {
-      id: 132,
-      avg: 0.82, // (39 + 125) / (50 + 150)
-      1: 0.78, // 39 / 50
-      2: 0.833 // late: (140 - 15) / 150
-    }
-  ];*/
-const result={};
-  return result;
 }
-// const learner125 = LearnerSubmissions[0].learner_id;
-//   const avg = (LearnerSubmissions[0].submission.score + LearnerSubmissions[1].submission.score) / (AssignmentGroup.assignments[0].points_possible + AssignmentGroup.assignments[1].points_possible); 
-//   const one = (LearnerSubmissions[0].submission.score) / (AssignmentGroup.assignments[0].points_possible);
-//   const two = (LearnerSubmissions[1].submission.score) / (AssignmentGroup.assignments[1].points_possible);
+const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
+console.log(result);
 
-//   console.log("id:" + learner125, "avg:" + avg, "1:" + one, "2:" + two)
+// [
+//   { '1': 0.94, '2': 1, '3': 0.8, id: 125, avg: 91.33333333333334 },
+//   { '1': 0.94, '2': 1, '3': 0.8, id: 125, avg: 91.33333333333334 },
+//   { '1': 0.94, '2': 1, '3': 0.8, id: 125, avg: 91.33333333333334 },
+//   { '1': 0.78, id: 132, avg: 78 },
+//   { '1': 0.78, id: 132, avg: 78 }
+// ]
 
-// const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
+// yes it's a result .. but.. not an array with two object.. ''wooosaaahh'''' 
 
-// // console.log(result);
-
-// const learner132 = LearnerSubmissions[3].learner_id;
-//   const avg2 = (LearnerSubmissions[3].submission.score + LearnerSubmissions[4].submission.score) / (AssignmentGroup.assignments[0].points_possible + AssignmentGroup.assignments[1].points_possible); 
-//   const one2 = (LearnerSubmissions[3].submission.score) / (AssignmentGroup.assignments[0].points_possible);
-//   let latePenalty;
-//   let percentage;
-//   let submissionDate= new Date(LearnerSubmissions[4].submission.submitted_at);
-//   let dueDate=new Date (AssignmentGroup.assignments[1].due_at);
-//   let todayDate= new Date();
-//   if(submissionDate >dueDate){
-//     percentage= AssignmentGroup.assignments[1].points_possible *0.10;
-//     latePenalty=LearnerSubmissions[4].submission.score -percentage;
-//   }
-//   // let two2 = (LearnerSubmissions[4].submission.score) / (AssignmentGroup.assignments[1].points_possible);
-//   let two2 = ((latePenalty) / (AssignmentGroup.assignments[1].points_possible)).toFixed(3);
-//   console.log("id:" + learner132, "avg:" + avg2, "1:" + one2, "2:" + two2)
-
-//   let submissions = LearnerSubmissions;
-//   for( let i=0, len=submissions.length; i<len; i++){
-//     console.log(submissions[i]);
-
-// let totalPointsPossible = 0;
-//   dueAssignments.forEach(assignment => {
-//       totalPointsPossible += assignment.points_possible;
-//   });
-  
-
-//   }
-
-//   function getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions){
-//     const learnerArray = []; //STORE ANSWER
-   
-//     let submissions = LearnerSubmissions;
-//   for( let i = 0, len=submissions.length; i<len; i++){
-//     const innerArray = submissions[i];
-
-//     for (let n = 0; n < innerArray.length; n++) {
-//       const obj = innerArray[n];
-      
-
-//       if(obj.learner_id === "125" || obj.learner_id === "132") {
-//         learnerArray.push(obj);
-//         console.log(learnerArray);
-//       }
-
-
-//     }
-     
-
-//   }
-//   return learnerArray;
-// }
-// const learnerArray = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
-// console.log(learnerArray);
-
-// let studentsId =[]
-    
+                  
+                  
 
 
 
-//     let unique_studentsId = [...new Set(studentsId)];   // remove duplicates Ids
-//     console.log(unique_studentsId);
-  
-//   const learnerId = LearnerSubmissions[0].learner_id;
-// const assignment1 = AssignmentGroup.assignments[0];
-// const assignment2 = AssignmentGroup.assignments[1];
-
-// const score1 = LearnerSubmissions[0].submission.score;
-// const score2 = LearnerSubmissions[1].submission.score;
-
-// const totalPoints1 = assignment1.points_possible;
-// const totalPoints2 = assignment2.points_possible;
-
-// const avg = (score1 + score2) / (totalPoints1 + totalPoints2);
-// const percentage1 = score1 / totalPoints1;
-// const percentage2 = score2 / totalPoints2;
-
-
-
-//// cleaner /////
-const score1 = LearnerSubmissions[0].submission.score;
-const score2 = LearnerSubmissions[1].submission.score;
-
-const totalPoints1 = assignment1.points_possible;
-const totalPoints2 = assignment2.points_possible;
-
-const avg = (score1 + score2) / (totalPoints1 + totalPoints2);
-const percentage1 = score1 / totalPoints1;
-const percentage2 = score2 / totalPoints2;
