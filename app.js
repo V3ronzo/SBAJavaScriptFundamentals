@@ -134,7 +134,7 @@ function getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions) {
               return scores;
           }, {});
 
-          // Add learner's data to the result using push.. !!
+          // Add learner's data to the result using push.. !!!
           acc.push({
               id: learnerId,
               avg,
